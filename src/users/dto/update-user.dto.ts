@@ -12,6 +12,10 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  faith?: string;
+
+  @IsOptional()
+  @IsString()
   profilePhoto?: string;
 }
 
