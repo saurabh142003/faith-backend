@@ -19,7 +19,7 @@ export class PostsService {
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     @InjectModel(Follow.name) private followModel: Model<FollowDocument>,
     private notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async create(userId: string, createPostDto: CreatePostDto) {
     const post = await this.postModel.create({
@@ -49,6 +49,7 @@ export class PostsService {
     return this.postModel
       .find()
       .populate('authorId', 'name profilePhoto role')
+      .populate('comments.userId', 'name profilePhoto')
       .sort({ createdAt: -1 });
   }
 
@@ -64,6 +65,7 @@ export class PostsService {
     return this.postModel
       .find({ authorId: { $in: leaderIds } })
       .populate('authorId', 'name profilePhoto role')
+      .populate('comments.userId', 'name profilePhoto')
       .sort({ createdAt: -1 });
   }
 
@@ -80,20 +82,23 @@ export class PostsService {
   async likePost(postId: string, userId: string) {
     const post = await this.findOne(postId);
     const userIdObj = new Types.ObjectId(userId);
-    const isLiked = post.likes.some((id) => id.toString() === userId);
+    const userIdStr = userId.toString();
+
+    const isLiked = post.likes.some((id) => id.toString() === userIdStr);
 
     if (isLiked) {
       // Unlike
       post.likes = post.likes.filter(
-        (id) => id.toString() !== userId,
+        (id) => id.toString() !== userIdStr,
       ) as Types.ObjectId[];
     } else {
       // Like
       post.likes.push(userIdObj);
       // Notify post author (if not self-like)
-      if (post.authorId.toString() !== userId) {
+      const authorId = (post.authorId as any)._id || post.authorId;
+      if (authorId.toString() !== userIdStr) {
         await this.notificationsService.create(
-          post.authorId.toString(),
+          authorId.toString(),
           NotificationType.LIKE,
           'New Like',
           'Someone liked your post',
@@ -101,6 +106,7 @@ export class PostsService {
         );
       }
     }
+
 
     return post.save();
   }
@@ -114,9 +120,10 @@ export class PostsService {
     });
 
     // Notify post author (if not self-comment)
-    if (post.authorId.toString() !== userId) {
+    const authorId = (post.authorId as any)._id || post.authorId;
+    if (authorId.toString() !== userId) {
       await this.notificationsService.create(
-        post.authorId.toString(),
+        authorId.toString(),
         NotificationType.COMMENT,
         'New Comment',
         'Someone commented on your post',
@@ -130,11 +137,12 @@ export class PostsService {
   async savePost(postId: string, userId: string) {
     const post = await this.findOne(postId);
     const userIdObj = new Types.ObjectId(userId);
+    const userIdStr = userId.toString();
 
-    if (post.savedBy.some((id) => id.toString() === userId)) {
+    if (post.savedBy.some((id) => id.toString() === userIdStr)) {
       // Unsave
       post.savedBy = post.savedBy.filter(
-        (id) => id.toString() !== userId,
+        (id) => id.toString() !== userIdStr,
       ) as Types.ObjectId[];
     } else {
       // Save
