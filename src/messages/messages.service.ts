@@ -2,35 +2,35 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Message, MessageDocument } from './schemas/message.schema';
-import { Chat, ChatDocument } from '../chats/schemas/chat.schema';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType } from '../notifications/schemas/notification.schema';
+} from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
+import { Message, MessageDocument } from "./schemas/message.schema";
+import { Chat, ChatDocument } from "../chats/schemas/chat.schema";
+import { CreateMessageDto } from "./dto/create-message.dto";
+import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType } from "../notifications/schemas/notification.schema";
 
 @Injectable()
 export class MessagesService {
   constructor(
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
-    private notificationsService: NotificationsService,
+    private notificationsService: NotificationsService
   ) {}
 
   async create(userId: string, createMessageDto: CreateMessageDto) {
     // Verify chat exists and user is part of it
     const chat = await this.chatModel.findById(createMessageDto.chatId);
     if (!chat) {
-      throw new NotFoundException('Chat not found');
+      throw new NotFoundException("Chat not found");
     }
 
     if (
-      chat.worshiperId.toString() !== userId &&
-      chat.leaderId.toString() !== userId
+      chat.worshiperId.toString() !== userId.toString() &&
+      chat.leaderId.toString() !== userId.toString()
     ) {
-      throw new ForbiddenException('You do not have access to this chat');
+      throw new ForbiddenException("You do not have access to this chat");
     }
 
     const message = await this.messageModel.create({
@@ -53,32 +53,31 @@ export class MessagesService {
     await this.notificationsService.create(
       recipientId,
       NotificationType.NEW_MESSAGE,
-      'New Message',
-      'You have a new message',
-      createMessageDto.chatId,
+      "New Message",
+      "You have a new message",
+      createMessageDto.chatId
     );
 
-    return message.populate('senderId', 'name profilePhoto');
+    return message.populate("senderId", "name profilePhoto");
   }
 
   async findByChatId(chatId: string, userId: string) {
     // Verify chat exists and user is part of it
     const chat = await this.chatModel.findById(chatId);
     if (!chat) {
-      throw new NotFoundException('Chat not found');
+      throw new NotFoundException("Chat not found");
     }
 
     if (
-      chat.worshiperId.toString() !== userId &&
-      chat.leaderId.toString() !== userId
+      chat.worshiperId.toString() !== userId.toString() &&
+      chat.leaderId.toString() !== userId.toString()
     ) {
-      throw new ForbiddenException('You do not have access to this chat');
+      throw new ForbiddenException("You do not have access to this chat");
     }
 
     return this.messageModel
       .find({ chatId: new Types.ObjectId(chatId) })
-      .populate('senderId', 'name profilePhoto')
+      .populate("senderId", "name profilePhoto")
       .sort({ createdAt: 1 });
   }
 }
-

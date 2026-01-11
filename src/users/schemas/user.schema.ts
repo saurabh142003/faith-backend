@@ -23,6 +23,9 @@ export class User {
 
   @Prop({ default: '' })
   bio: string;
+
+  @Prop({ default: '' })
+  faith: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
