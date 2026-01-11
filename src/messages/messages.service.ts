@@ -17,7 +17,7 @@ export class MessagesService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     private notificationsService: NotificationsService
-  ) {}
+  ) { }
 
   async create(userId: string, createMessageDto: CreateMessageDto) {
     // Verify chat exists and user is part of it
@@ -76,7 +76,7 @@ export class MessagesService {
     }
 
     return this.messageModel
-      .find({ chatId: new Types.ObjectId(chatId) })
+      .find({ chatId })
       .populate("senderId", "name profilePhoto")
       .sort({ createdAt: 1 });
   }
